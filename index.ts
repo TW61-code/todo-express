@@ -1,6 +1,11 @@
 import express from 'express'; 
 import mongoose from 'mongoose';
+import cors from 'cors';
+import path from 'path';
+import fileUpload from 'express-fileupload';
+import bodyParser from 'body-parser';
 import { Todo, Attachment } from './schema.js';
+import { file } from 'bun';
 
 const app = express();
 const port = 3000;
@@ -13,6 +18,12 @@ async function connectDB() {
 };
 
 app.use(express.json());
+app.use(fileUpload());
+app.use(cors());
+app.use(bodyParser.urlencoded({extended: true}));
+const staticPath = path.join(__dirname);
+app.use(express.static(staticPath));
+
 
 app.get('/todos', async (req, res) => {
 
@@ -41,6 +52,33 @@ app.post('/todos', (req, res) => {
     res.send(newTodo);
 });
 
+// Post an attachment
+app.post('/todos/:id/attachments', async (req, res) => {
+
+    const { id } = req.params;
+    const uploadPath = __dirname + '/uploads' + id;
+
+    try {
+        // const file = req.name;
+        // const fileName = file.name;
+        // const size = file.size;
+        // const storage_url = `localhost:3000/todos/attachments/${fileName}${id}`
+        // const newAttachment = new Attachment({name: fileName, size: size, storage_url: storage_url});
+        // const currentTodo = Todo.findById(id);
+        // const updatedTodo = Todo.findByIdAndUpdate(id, {...currentTodo, ...newAttachment}, {new: true});
+        // file.mv(uploadPath);
+
+        // res.status(200).send('File succesfully uploaded');
+    
+        // const newAttachment = new Attachment(req.files);
+        // newAttachment.save();
+        // res.send(updatedTodo);
+        console.log(req.body);
+    } catch (err) {
+        console.error('ERROR!!! ', err);
+    };
+});
+
 app.put('/todos/:id', async (req, res) => {
 
     const { id } = req.params;
@@ -57,7 +95,6 @@ app.delete('/todos/:id', async (req, res) => {
         await Todo.findByIdAndDelete(id);
         const todosLeft = await Todo.countDocuments();
         res.status(200).send('Todo succesfully deleted');
-        console.log(todosLeft);
     } catch (err) {
         console.error(err);
     }

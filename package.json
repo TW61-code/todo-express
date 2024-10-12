@@ -4,14 +4,19 @@
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/express": "^5.0.0"
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/express-fileupload": "^1.5.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "express-fileupload": "^1.5.1",
+    "file-upload": "^0.0.0",
     "mongoose": "^8.7.1"
   }
 }
