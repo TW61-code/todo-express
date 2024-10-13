@@ -1,11 +1,9 @@
 import express from 'express'; 
-import mongoose from 'mongoose';
+import mongoose, { Mongoose } from 'mongoose';
 import cors from 'cors';
 import path from 'path';
 import fileUpload from 'express-fileupload';
-import bodyParser from 'body-parser';
 import { Todo, Attachment } from './schema.js';
-import { file } from 'bun';
 
 const app = express();
 const port = 3000;
@@ -19,8 +17,7 @@ async function connectDB() {
 
 app.use(express.json());
 app.use(fileUpload());
-app.use(cors());
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(cors()); 
 const staticPath = path.join(__dirname);
 app.use(express.static(staticPath));
 
@@ -56,24 +53,22 @@ app.post('/todos', (req, res) => {
 app.post('/todos/:id/attachments', async (req, res) => {
 
     const { id } = req.params;
-    const uploadPath = __dirname + '/uploads' + id;
+    const file = await req.files.file;
+    const fileName = file.name;
+    const uploadPath = path.join(__dirname, '/uploads', fileName);
 
     try {
-        // const file = req.name;
-        // const fileName = file.name;
-        // const size = file.size;
-        // const storage_url = `localhost:3000/todos/attachments/${fileName}${id}`
-        // const newAttachment = new Attachment({name: fileName, size: size, storage_url: storage_url});
-        // const currentTodo = Todo.findById(id);
-        // const updatedTodo = Todo.findByIdAndUpdate(id, {...currentTodo, ...newAttachment}, {new: true});
-        // file.mv(uploadPath);
+        //to remove red squiggly alter the fileupload middlewares type declaration to accept a single object. NOT an array (.FileArray);
+        const storagePath = `http://localhost:3000/todos/${id}/attachments`;
+        const newAttachment = await Attachment.create({name: fileName, size: 10, todoId: id, storagePath: storagePath});
+        // const currentTodo = await Todo.findById(id); Used as ref to current values
+        const updatedTodo = await Todo.findByIdAndUpdate(id, {$push: {attachments: newAttachment}}, {upsert: true, new: true});
+        file.mv(uploadPath);
 
-        // res.status(200).send('File succesfully uploaded');
-    
-        // const newAttachment = new Attachment(req.files);
-        // newAttachment.save();
-        // res.send(updatedTodo);
-        console.log(req.body);
+        updatedTodo;
+        console.log(updatedTodo);
+        
+        
     } catch (err) {
         console.error('ERROR!!! ', err);
     };

@@ -13,7 +13,7 @@ const AttachmentSchema = new mongoose.Schema({
   todoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Todo', required: true },
   name: { type: String, required: true },
   size: { type: Number, required: true },
-  storagePath: { type: String, required: true },
+  storagePath: { type: String, required: true },  
 });
 
 const Attachment = mongoose.model('Attachment', AttachmentSchema);
