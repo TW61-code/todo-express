@@ -28,6 +28,31 @@ app.get('/todos', async (req, res) => {
     res.send(data);
 });
 
+app.get('/todos/:id/attachments', async (req, res) => {
+
+    const { id } = req.params;
+
+    try {
+        const attachments = await Attachment.find({todoId: id});
+        res.status(200).send(attachments);
+    } catch (err) {
+        console.error(err);
+    };
+});
+
+app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
+
+    const { todoId, attachmentId } = req.params;
+
+    try {
+        const selectedAttachment = await Attachment.find({todoId: todoId, _id: attachmentId});
+        res.status(200).json(selectedAttachment[0]);
+        console.log(JSON.stringify(selectedAttachment));
+    } catch (err) {
+        console.error(err);
+    };
+});
+
 // Fetch a speific item
 app.get('/todos/:id', async (req, res) => {
 
@@ -60,16 +85,18 @@ app.post('/todos/:id/attachments', async (req, res) => {
     try {
         //to remove red squiggly alter the fileupload middlewares type declaration to accept a single object. NOT an array (.FileArray);
         const storagePath = `http://localhost:3000/todos/${id}/attachments`;
-        const newAttachment = await Attachment.create({name: fileName, size: 10, todoId: id, storagePath: storagePath});
-        // const currentTodo = await Todo.findById(id); Used as ref to current values
-        const updatedTodo = await Todo.findByIdAndUpdate(id, {$push: {attachments: newAttachment}}, {upsert: true, new: true});
-        file.mv(uploadPath);
+        const newAttachment = await Attachment.create({name: fileName, size: 10, todoId: id, storagePath: storagePath}); 
+        newAttachment.save();
 
-        updatedTodo;
-        console.log(updatedTodo);
-        
-        
+        const updatedTodo = await Todo.findByIdAndUpdate(
+            id, 
+            {attachments: newAttachment}, 
+            {new: true}
+        );
+
+        file.mv(uploadPath);
     } catch (err) {
+
         console.error('ERROR!!! ', err);
     };
 });
