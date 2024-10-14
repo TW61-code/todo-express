@@ -47,7 +47,6 @@ app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
     try {
         const selectedAttachment = await Attachment.find({todoId: todoId, _id: attachmentId});
         res.status(200).json(selectedAttachment[0]);
-        console.log(JSON.stringify(selectedAttachment));
     } catch (err) {
         console.error(err);
     };
@@ -120,6 +119,20 @@ app.delete('/todos/:id', async (req, res) => {
     } catch (err) {
         console.error(err);
     }
+});
+
+app.delete('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
+
+    const { todoId, attachmentId } = req.params;
+
+    try {
+
+        const deletedAttachment = await Attachment.findOneAndDelete({todoId: todoId, _id: attachmentId});
+        console.log(await Attachment.countDocuments());
+        res.status(204).send('File deleted');
+    } catch (err) {
+        console.error(err);
+    };
 });
 
 app.listen(port, async () => {
