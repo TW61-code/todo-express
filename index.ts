@@ -24,11 +24,12 @@ app.use(express.static(staticPath));
 app.post('/todos', (req, res) => {
 
     const reqObj = req.body;
-    console.log(reqObj.title);
+    const Inputdate = reqObj.due_at;
+    const date = new Date(Inputdate).toJSON();
 
-    if (!reqObj.due_at) {
-        console.error('Title is required');
-        res.sendStatus(204);
+    if (reqObj.due_at && date === null) {
+        console.error('Valid date is required');
+        // res.sendStatus(204);
     };
 
     try {
