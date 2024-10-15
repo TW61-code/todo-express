@@ -1,5 +1,5 @@
 import express from 'express'; 
-import mongoose, { Mongoose } from 'mongoose';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
 import fileUpload from 'express-fileupload';
@@ -21,11 +21,84 @@ app.use(cors());
 const staticPath = path.join(__dirname);
 app.use(express.static(staticPath));
 
+app.post('/todos', (req, res) => {
+
+    const reqObj = req.body;
+    console.log(reqObj.title);
+
+    if (!reqObj.due_at) {
+        console.error('Title is required');
+        res.sendStatus(204);
+    };
+
+    try {
+        
+        const newTodo = new Todo(reqObj);
+    
+        newTodo.save();
+        res.send(newTodo);
+    } catch (err) {
+        console.error(err);
+    };
+});
+
+// Post an attachment
+app.post('/todos/:id/attachments', async (req, res) => {
+
+    const { id } = req.params;
+    const file = req.files.file;
+    const fileCount = await Attachment.countDocuments();
+    const fileName = fileCount > 0 ? `${file.name}(${fileCount})` : file.name;
+
+    const existingFileName = await Attachment.find({name: fileName});
+
+    if (existingFileName) {
+        console.error('File already exists');
+        // res.sendStatus(422);
+    };
+
+    try {
+
+        const uploadPath = path.join(__dirname, '/uploads', fileName);
+        const storagePath = `http://localhost:3000/todos/${id}/attachments`;
+        //to remove red squiggly alter the fileupload middlewares type declaration to accept a single object. NOT an array (.FileArray);
+        const newAttachment = await Attachment.create({name: fileName, size: 10, todoId: id, storagePath: storagePath});
+
+        newAttachment.save();
+
+        //THE answer is in the mongoose subDocuments document;
+        // await Todo.findByIdAndUpdate(
+        //     id, 
+        //     {attachments: newAttachment}, 
+        //     {new: true},
+        // );  
+
+        console.log(id);
+        res.status(201).send(newAttachment);
+        file.mv(uploadPath);
+    } catch (err) {
+
+        console.error('ERROR!!! ', err);
+    };
+});
 
 app.get('/todos', async (req, res) => {
 
     const data = await Todo.find();
     res.send(data);
+});
+
+// Fetch a speific item
+app.get('/todos/:id', async (req, res) => {
+
+    const { id } = req.params;
+
+    try {
+        const selectedTodo = await Todo.findById(id);
+        res.send(selectedTodo);
+    } catch (err) {
+        console.error(err);
+    };
 });
 
 app.get('/todos/:id/attachments', async (req, res) => {
@@ -34,7 +107,7 @@ app.get('/todos/:id/attachments', async (req, res) => {
 
     try {
         const attachments = await Attachment.find({todoId: id});
-        res.status(200).send(attachments);
+        res.send(attachments);
     } catch (err) {
         console.error(err);
     };
@@ -46,57 +119,9 @@ app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
 
     try {
         const selectedAttachment = await Attachment.find({todoId: todoId, _id: attachmentId});
-        res.status(200).json(selectedAttachment[0]);
+        res.json(selectedAttachment[0]);
     } catch (err) {
         console.error(err);
-    };
-});
-
-// Fetch a speific item
-app.get('/todos/:id', async (req, res) => {
-
-    const { id } = req.params;
-
-    try {
-        const selectedTodo = await Todo.findById(id);
-        res.status(200).send(selectedTodo);
-    } catch (err) {
-        console.error(err);
-    };
-});
-
-app.post('/todos', (req, res) => {
-
-    const newTodo = new Todo(req.body);
-
-    newTodo.save();
-    res.send(newTodo);
-});
-
-// Post an attachment
-app.post('/todos/:id/attachments', async (req, res) => {
-
-    const { id } = req.params;
-    const file = await req.files.file;
-    const fileName = file.name;
-    const uploadPath = path.join(__dirname, '/uploads', fileName);
-
-    try {
-        //to remove red squiggly alter the fileupload middlewares type declaration to accept a single object. NOT an array (.FileArray);
-        const storagePath = `http://localhost:3000/todos/${id}/attachments`;
-        const newAttachment = await Attachment.create({name: fileName, size: 10, todoId: id, storagePath: storagePath}); 
-        newAttachment.save();
-
-        const updatedTodo = await Todo.findByIdAndUpdate(
-            id, 
-            {attachments: newAttachment}, 
-            {new: true}
-        );
-
-        file.mv(uploadPath);
-    } catch (err) {
-
-        console.error('ERROR!!! ', err);
     };
 });
 
@@ -127,7 +152,7 @@ app.delete('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
 
     try {
 
-        const deletedAttachment = await Attachment.findOneAndDelete({todoId: todoId, _id: attachmentId});
+        await Attachment.findOneAndDelete({todoId: todoId, _id: attachmentId});
         console.log(await Attachment.countDocuments());
         res.status(204).send('File deleted');
     } catch (err) {
