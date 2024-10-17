@@ -1,5 +1,6 @@
 import express from 'express'; 
 import mongoose from 'mongoose';
+import {engine} from 'express-handlebars';
 import cors from 'cors';
 import path from 'path';
 import fileUpload from 'express-fileupload';
@@ -20,30 +21,50 @@ app.use(fileUpload());
 app.use(cors()); 
 const staticPath = path.join(__dirname);
 app.use(express.static(staticPath));
+app.use(express.static('todo-express')); // Could be wrong folder...
 
-app.post('/todos', (req, res) => {
+app.engine('handlebars', engine());
+app.set('view engine', 'handlebars');
+app.set('views', './views');
 
-    const reqObj = req.body;
-    const Inputdate = reqObj.due_at;
-    const date = new Date(Inputdate).toJSON();
+//Handlebars method
+app.get('/', async (req, res) => {
+    const todos = [];
 
-    if (reqObj.due_at && date === null) {
-        console.error('Valid date is required');
-        // res.sendStatus(204);
+    const documents = await Todo.find().lean();
+    for(const obj of documents) {
+        todos.push(obj.title);
+    }
+
+    res.render('home', {layout: 'main', todos: todos});
+});
+
+const errorJsonFromMongooseErrors = (mongooseErrors) => {
+    let errors = {};
+    console.dir(mongooseErrors);
+
+    for (const key in mongooseErrors.errors) {
+        const details = mongooseErrors.errors[key];
+        errors[key] = details.properties?.type || 'invalid';
     };
 
-    try {
-        
+    return errors;
+};
+
+app.post('/todos', async (req, res) => {
+    const reqObj = req.body;
+
+    try {  
         const newTodo = new Todo(reqObj);
     
-        newTodo.save();
-        res.send(newTodo);
+        await newTodo.save();
+        res.status(200).json(newTodo);
     } catch (err) {
-        console.error(err);
+        const errors = errorJsonFromMongooseErrors(err);
+        res.status(422).json({ errors });
     };
 });
 
-// Post an attachment
 app.post('/todos/:id/attachments', async (req, res) => {
 
     const { id } = req.params;
@@ -91,14 +112,17 @@ app.get('/todos', async (req, res) => {
 
 // Fetch a speific item
 app.get('/todos/:id', async (req, res) => {
-
     const { id } = req.params;
 
     try {
         const selectedTodo = await Todo.findById(id);
-        res.send(selectedTodo);
+        if (!selectedTodo) {
+            res.status(404).json({ error: 'Todo not found' });
+        };
+        res.status(200).json(selectedTodo);
     } catch (err) {
         console.error(err);
+        res.status(404).json({ error: 'Todo not found' });
     };
 });
 
@@ -135,7 +159,6 @@ app.put('/todos/:id', async (req, res) => {
 });
 
 app.delete('/todos/:id', async (req, res) => {
-
     const { id } = req.params;
 
     try {
@@ -148,16 +171,16 @@ app.delete('/todos/:id', async (req, res) => {
 });
 
 app.delete('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
-
     const { todoId, attachmentId } = req.params;
 
     try {
-
-        await Attachment.findOneAndDelete({todoId: todoId, _id: attachmentId});
-        console.log(await Attachment.countDocuments());
-        res.status(204).send('File deleted');
+        const deletedAttachment = await Attachment.findOneAndDelete({ _id: attachmentId, todoId: todoId});
+        if (!deletedAttachment) {
+            res.status(404).json({error: 'Attachment not found'});
+        };
+        res.status(204).send();
     } catch (err) {
-        console.error(err);
+        res.status(404).json({error: 'Attachment not found'});
     };
 });
 

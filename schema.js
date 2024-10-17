@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 // MongoDB models
 const TodoSchema = new mongoose.Schema({
-  title: { type: String, required: true },
+  title: { type: String, required: false },
   description: String,
   dueAt: Date,
 });
