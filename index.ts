@@ -58,18 +58,12 @@ const errorJsonFromMongooseErrors = (mongooseErrors) => {
 app.post('/todos', async (req, res) => {
     const reqObj = req.body;
 
-    if(reqObj.dueAt && isNaN(reqObj.dueAt)) {
-        res.status(422).json({ errors: { dueAt: 'invalid' }});
-    };
-
     try {  
         const newTodo = new Todo(reqObj);
         await newTodo.save();
         res.status(201).json(newTodo);
     } catch (err) {
-        console.log('This is the catch block error ', err);
         const errors = errorJsonFromMongooseErrors(err);
-        console.log('this is the error returned from errorJSON function ', errors);
         res.status(422).json({ errors });
     };
 });
