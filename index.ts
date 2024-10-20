@@ -16,16 +16,19 @@ async function connectDB() {
     await mongoose.connect(uri);
 };
 
-app.use(express.json());
-app.use(fileUpload());
-app.use(cors()); 
-const staticPath = path.join(__dirname);
-app.use(express.static(staticPath));
-app.use(express.static('todo-express')); // Could be wrong folder...
-
-app.engine('handlebars', engine());
-app.set('view engine', 'handlebars');
-app.set('views', './views');
+function middlewaresEtc() {
+    app.use(express.json());
+    app.use(fileUpload());
+    app.use(cors()); 
+    const staticPath = path.join(__dirname);
+    app.use(express.static(staticPath));
+    app.use(express.static('todo-express')); // Could be wrong folder...
+    
+    app.engine('handlebars', engine());
+    app.set('view engine', 'handlebars');
+    app.set('views', './views');
+};
+middlewaresEtc();
 
 //Handlebars method
 app.get('/', async (req, res) => {
@@ -39,6 +42,7 @@ app.get('/', async (req, res) => {
     res.render('home', {layout: 'main', todos: todos});
 });
 
+//Return catch block error
 const errorJsonFromMongooseErrors = (mongooseErrors) => {
     let errors = {};
     console.dir(mongooseErrors);
@@ -54,13 +58,18 @@ const errorJsonFromMongooseErrors = (mongooseErrors) => {
 app.post('/todos', async (req, res) => {
     const reqObj = req.body;
 
+    if(reqObj.dueAt && isNaN(reqObj.dueAt)) {
+        res.status(422).json({ errors: { dueAt: 'invalid' }});
+    };
+
     try {  
         const newTodo = new Todo(reqObj);
-    
         await newTodo.save();
-        res.status(200).json(newTodo);
+        res.status(201).json(newTodo);
     } catch (err) {
+        console.log('This is the catch block error ', err);
         const errors = errorJsonFromMongooseErrors(err);
+        console.log('this is the error returned from errorJSON function ', errors);
         res.status(422).json({ errors });
     };
 });
@@ -112,10 +121,8 @@ app.get('/todos', async (req, res) => {
 
 // Fetch a speific item
 app.get('/todos/:id', async (req, res) => {
-    const { id } = req.params;
-
     try {
-        const selectedTodo = await Todo.findById(id);
+        const selectedTodo = await Todo.findById(req.params.id);
         if (!selectedTodo) {
             res.status(404).json({ error: 'Todo not found' });
         };
@@ -127,11 +134,8 @@ app.get('/todos/:id', async (req, res) => {
 });
 
 app.get('/todos/:id/attachments', async (req, res) => {
-
-    const { id } = req.params;
-
     try {
-        const attachments = await Attachment.find({todoId: id});
+        const attachments = await Attachment.find({todoId: req.params.id});
         res.send(attachments);
     } catch (err) {
         console.error(err);
@@ -139,11 +143,8 @@ app.get('/todos/:id/attachments', async (req, res) => {
 });
 
 app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
-
-    const { todoId, attachmentId } = req.params;
-
     try {
-        const selectedAttachment = await Attachment.find({todoId: todoId, _id: attachmentId});
+        const selectedAttachment = await Attachment.find({todoId: req.params.todoId, _id: req.params.attachmentId});
         res.json(selectedAttachment[0]);
     } catch (err) {
         console.error(err);
@@ -151,18 +152,13 @@ app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
 });
 
 app.put('/todos/:id', async (req, res) => {
-
-    const { id } = req.params;
-
-    const updatedTodo = await Todo.findByIdAndUpdate(id, req.body, {new: true});
+    const updatedTodo = await Todo.findByIdAndUpdate(req.params.id, req.body, {new: true});
     res.send(updatedTodo);
 });
 
 app.delete('/todos/:id', async (req, res) => {
-    const { id } = req.params;
-
     try {
-        await Todo.findByIdAndDelete(id);
+        await Todo.findByIdAndDelete(req.params.id);
         const todosLeft = await Todo.countDocuments();
         res.status(200).send('Todo succesfully deleted');
     } catch (err) {
@@ -171,10 +167,8 @@ app.delete('/todos/:id', async (req, res) => {
 });
 
 app.delete('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
-    const { todoId, attachmentId } = req.params;
-
     try {
-        const deletedAttachment = await Attachment.findOneAndDelete({ _id: attachmentId, todoId: todoId});
+        const deletedAttachment = await Attachment.findOneAndDelete({ _id: req.params.attachmentId, todoId: req.params.todoId});
         if (!deletedAttachment) {
             res.status(404).json({error: 'Attachment not found'});
         };
