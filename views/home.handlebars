@@ -1,7 +1,16 @@
-
+<form method="post" action="http://localhost:3000/todos">
+  <input type="text" name="title" />
+  <input type="text" name="dueAt" />
+  <button type="submit">create</button>
+</form>
 
 <ul>
   {{#each todos}}
-    <li>{{this}}</li>
+    <li>
+      {{this}}
+      <form method="post" action=`http://localhost:3000/todos/${this._id}`>
+        <button type="submit">delete</button>
+      </form>
+    </li>
   {{/each}}
 </ul>
