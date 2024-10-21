@@ -4,6 +4,7 @@ import {engine} from 'express-handlebars';
 import cors from 'cors';
 import path from 'path';
 import fileUpload from 'express-fileupload';
+import bodyParser from 'body-parser';
 import { Todo, Attachment } from './schema.js';
 
 const app = express();
@@ -21,7 +22,7 @@ app.use(fileUpload());
 app.use(cors()); 
 const staticPath = path.join(__dirname);
 app.use(express.static(staticPath));
-app.use(express.static('todo-express')); // Could be wrong folder...
+app.use(bodyParser({ extended: false }));
 
 app.engine('handlebars', engine());
 app.set('view engine', 'handlebars');
@@ -31,12 +32,25 @@ app.set('views', './views');
 app.get('/', async (req, res) => {
     const todos = [];
 
+    const date = new Date();
+    const today = date.getDay();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    const currentDate = `${today} - ${month} - ${year}`;
+
+    const todoPrompt = todos.length === 0 ? 'Create a task' : 'Your tasks';
+
     const documents = await Todo.find().lean();
     for(const obj of documents) {
         todos.push(obj.title);
-    }
+    };
 
-    res.render('home', {layout: 'main', todos: todos});
+    res.render('home', {
+        layout: 'main', 
+        todos: todos,
+        date: currentDate,
+        todoPrompt: todoPrompt,
+    });
 });
 
 const errorJsonFromMongooseErrors = (mongooseErrors) => {
@@ -63,6 +77,10 @@ app.post('/todos', async (req, res) => {
         const errors = errorJsonFromMongooseErrors(err);
         res.status(422).json({ errors });
     };
+
+    res.render('home', {
+        layout: 'main'
+    });
 });
 
 app.post('/todos/:id/attachments', async (req, res) => {

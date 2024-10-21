@@ -1,7 +1,44 @@
+<header style="
+  display: flex;
+  justify-content: space-between;
+  ">
+  <h3>Drew</h3>
+  <h1>TODO EXPRESS</h1>
+  <div class="inner-header-container">
+    <p class="date">{{date}}</p>
+    <p class="settings"></p>
+  </div>
+</header>
 
+<main style="
+  width: 500px;
+  margin: 0 auto;
+  text-align: center;
+">
+  <h3>{{todoPrompt}}</h3>
+  
+  <form method="post" action="http://localhost:3000/todos">
+    <input type="text" name="title" />
+    <input type="text" name="dueAt" />
+    <button id="submit" type="submit">Create</button>
+  </form>
 
-<ul>
-  {{#each todos}}
-    <li>{{this}}</li>
-  {{/each}}
-</ul>
+  <ul style="
+    margin: 50px auto;
+    padding: 0;
+    list-style: none;
+    width: 300px;
+  ">
+    {{#each todos}}
+      <li style="
+        display: flex;
+        justify-content: space-between;
+      ">
+        {{this}}
+        <button id="delete">Delete</button>
+      </li>
+    {{/each}}
+  </ul>
+</main>
+
+<script src="index.js"></script>
