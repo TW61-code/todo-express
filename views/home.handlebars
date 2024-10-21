@@ -30,12 +30,12 @@
     width: 300px;
   ">
     {{#each todos}}
-      <li style="
-        display: flex;
-        justify-content: space-between;
-      ">
+      <li 
+        style="display: flex;
+              justify-content: space-between;"
+      >
         {{this}}
-        <button id="delete">Delete</button>
+          <button id="delete" onclick={{{handleDelete}}}>Delete</button>
       </li>
     {{/each}}
   </ul>

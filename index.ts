@@ -45,11 +45,19 @@ app.get('/', async (req, res) => {
         todos.push(obj.title);
     };
 
+    const deleteMethod = async () => {
+        const response = await fetch(`http://localhost:3000/todos/6715c25dd829247234d5ef0c`, {
+            headers: { "Content-Type": "application/json" },
+            method: "DELETE"
+        });
+    };
+
     res.render('home', {
         layout: 'main', 
         todos: todos,
         date: currentDate,
         todoPrompt: todoPrompt,
+        handleDelete: deleteMethod(),
     });
 });
 
@@ -70,17 +78,13 @@ app.post('/todos', async (req, res) => {
 
     try {  
         const newTodo = new Todo(reqObj);
-    
+        console.log(newTodo);
         await newTodo.save();
-        res.status(200).json(newTodo);
+        res.status(200).redirect('/');
     } catch (err) {
         const errors = errorJsonFromMongooseErrors(err);
         res.status(422).json({ errors });
     };
-
-    res.render('home', {
-        layout: 'main'
-    });
 });
 
 app.post('/todos/:id/attachments', async (req, res) => {
@@ -105,17 +109,8 @@ app.post('/todos/:id/attachments', async (req, res) => {
         const newAttachment = await Attachment.create({name: fileName, size: 10, todoId: id, storagePath: storagePath});
 
         newAttachment.save();
-
-        //THE answer is in the mongoose subDocuments document;
-        // await Todo.findByIdAndUpdate(
-        //     id, 
-        //     {attachments: newAttachment}, 
-        //     {new: true},
-        // );  
-
-        console.log(id);
-        res.status(201).send(newAttachment);
         file.mv(uploadPath);
+        res.status(201).send(newAttachment);
     } catch (err) {
 
         console.error('ERROR!!! ', err);
@@ -123,7 +118,6 @@ app.post('/todos/:id/attachments', async (req, res) => {
 });
 
 app.get('/todos', async (req, res) => {
-
     const data = await Todo.find();
     res.send(data);
 });
