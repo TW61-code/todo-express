@@ -61,6 +61,7 @@ app.get('/', async (req, res) => {
     });
 });
 
+//Return catch block error
 const errorJsonFromMongooseErrors = (mongooseErrors) => {
     let errors = {};
     console.dir(mongooseErrors);
@@ -112,7 +113,6 @@ app.post('/todos/:id/attachments', async (req, res) => {
         file.mv(uploadPath);
         res.status(201).send(newAttachment);
     } catch (err) {
-
         console.error('ERROR!!! ', err);
     };
 });
@@ -124,10 +124,8 @@ app.get('/todos', async (req, res) => {
 
 // Fetch a speific item
 app.get('/todos/:id', async (req, res) => {
-    const { id } = req.params;
-
     try {
-        const selectedTodo = await Todo.findById(id);
+        const selectedTodo = await Todo.findById(req.params.id);
         if (!selectedTodo) {
             res.status(404).json({ error: 'Todo not found' });
         };
@@ -139,11 +137,8 @@ app.get('/todos/:id', async (req, res) => {
 });
 
 app.get('/todos/:id/attachments', async (req, res) => {
-
-    const { id } = req.params;
-
     try {
-        const attachments = await Attachment.find({todoId: id});
+        const attachments = await Attachment.find({todoId: req.params.id});
         res.send(attachments);
     } catch (err) {
         console.error(err);
@@ -151,11 +146,8 @@ app.get('/todos/:id/attachments', async (req, res) => {
 });
 
 app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
-
-    const { todoId, attachmentId } = req.params;
-
     try {
-        const selectedAttachment = await Attachment.find({todoId: todoId, _id: attachmentId});
+        const selectedAttachment = await Attachment.find({todoId: req.params.todoId, _id: req.params.attachmentId});
         res.json(selectedAttachment[0]);
     } catch (err) {
         console.error(err);
@@ -163,18 +155,13 @@ app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
 });
 
 app.put('/todos/:id', async (req, res) => {
-
-    const { id } = req.params;
-
-    const updatedTodo = await Todo.findByIdAndUpdate(id, req.body, {new: true});
+    const updatedTodo = await Todo.findByIdAndUpdate(req.params.id, req.body, {new: true});
     res.send(updatedTodo);
 });
 
 app.delete('/todos/:id', async (req, res) => {
-    const { id } = req.params;
-
     try {
-        await Todo.findByIdAndDelete(id);
+        await Todo.findByIdAndDelete(req.params.id);
         const todosLeft = await Todo.countDocuments();
         res.status(200).send('Todo succesfully deleted');
     } catch (err) {
@@ -183,10 +170,8 @@ app.delete('/todos/:id', async (req, res) => {
 });
 
 app.delete('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
-    const { todoId, attachmentId } = req.params;
-
     try {
-        const deletedAttachment = await Attachment.findOneAndDelete({ _id: attachmentId, todoId: todoId});
+        const deletedAttachment = await Attachment.findOneAndDelete({ _id: req.params.attachmentId, todoId: req.params.todoId});
         if (!deletedAttachment) {
             res.status(404).json({error: 'Attachment not found'});
         };
