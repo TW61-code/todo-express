@@ -5,6 +5,7 @@ import cors from 'cors';
 import path from 'path';
 import fileUpload from 'express-fileupload';
 import bodyParser from 'body-parser';
+// import MethodOverrideOptions from 'method-override';
 import { Todo, Attachment } from './schema.js';
 
 const app = express();
@@ -18,6 +19,7 @@ async function connectDB() {
 };
 
 app.use(express.json());
+// app.use(MethodOverrideOptions('_method'));
 app.use(fileUpload());
 app.use(cors()); 
 const staticPath = path.join(__dirname);
@@ -37,30 +39,51 @@ app.get('/', async (req, res) => {
     const month = date.getMonth() + 1;
     const year = date.getFullYear();
     const currentDate = `${today} - ${month} - ${year}`;
+    const documentCount = await Todo.countDocuments();
 
-    const todoPrompt = todos.length === 0 ? 'Create a task' : 'Your tasks';
+    const todoPrompt = documentCount > 0 ? 'Your tasks' : 'Create a task';
 
     const documents = await Todo.find().lean();
     for(const obj of documents) {
-        todos.push(obj.title);
+        todos.push(obj);
     };
 
-    const deleteMethod = async () => {
-        const response = await fetch(`http://localhost:3000/todos/6715c25dd829247234d5ef0c`, {
-            headers: { "Content-Type": "application/json" },
-            method: "DELETE"
-        });
+    for(const todo of todos) {
+        todo.dueAt = JSON.stringify(todo.dueAt).slice(1, 11);
     };
+
+    console.log(todos);
 
     res.render('home', {
         layout: 'main', 
         todos: todos,
         date: currentDate,
         todoPrompt: todoPrompt,
-        handleDelete: deleteMethod(),
     });
 });
 
+app.get('/todos/edit-form/:id', async (req, res) => {
+    const date = new Date();
+    const today = date.getDay();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    const currentDate = `${today} - ${month} - ${year}`;
+    const documentCount = await Todo.countDocuments();
+
+    const todoPrompt = documentCount > 0 ? 'Your tasks Not mine!' : 'Create a task';
+
+    const currentTodo = await Todo.findOne({ _id: req.params.id }).lean();
+    currentTodo.dueAt = 
+
+    console.log('current todo ', currentTodo);
+
+    res.render('edit-todo-page', {
+        layout: 'main', 
+        currentTodo: currentTodo,
+        date: currentDate,
+        todoPrompt: todoPrompt,
+    });
+});
 //Return catch block error
 const errorJsonFromMongooseErrors = (mongooseErrors) => {
     let errors = {};
@@ -73,20 +96,6 @@ const errorJsonFromMongooseErrors = (mongooseErrors) => {
 
     return errors;
 };
-
-app.post('/todos', async (req, res) => {
-    const reqObj = req.body;
-
-    try {  
-        const newTodo = new Todo(reqObj);
-        console.log(newTodo);
-        await newTodo.save();
-        res.status(200).redirect('/');
-    } catch (err) {
-        const errors = errorJsonFromMongooseErrors(err);
-        res.status(422).json({ errors });
-    };
-});
 
 app.post('/todos/:id/attachments', async (req, res) => {
 
@@ -103,7 +112,6 @@ app.post('/todos/:id/attachments', async (req, res) => {
     };
 
     try {
-
         const uploadPath = path.join(__dirname, '/uploads', fileName);
         const storagePath = `http://localhost:3000/todos/${id}/attachments`;
         //to remove red squiggly alter the fileupload middlewares type declaration to accept a single object. NOT an array (.FileArray);
@@ -114,6 +122,20 @@ app.post('/todos/:id/attachments', async (req, res) => {
         res.status(201).send(newAttachment);
     } catch (err) {
         console.error('ERROR!!! ', err);
+    };
+});
+
+app.post('/todos', async (req, res) => {
+    const reqObj = req.body;
+
+    try {  
+        const newTodo = new Todo(reqObj);
+        console.log(newTodo);
+        await newTodo.save();
+        res.status(200).redirect('/');
+    } catch (err) {
+        const errors = errorJsonFromMongooseErrors(err);
+        res.status(422).json({ errors });
     };
 });
 
@@ -154,22 +176,25 @@ app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
     };
 });
 
-app.put('/todos/:id', async (req, res) => {
-    const updatedTodo = await Todo.findByIdAndUpdate(req.params.id, req.body, {new: true});
-    res.send(updatedTodo);
+
+//UPDATE A TODO
+app.post('/todos/edit/:id', async (req, res) => {
+    await Todo.findByIdAndUpdate(req.params.id, { title: req.body.title, dueAt: req.body.dueAt }, {new: true});
+    res.redirect('/');
 });
 
-app.delete('/todos/:id', async (req, res) => {
+//DELETE A TODO
+app.post('/todos/:id', async (req, res) => {
     try {
         await Todo.findByIdAndDelete(req.params.id);
-        const todosLeft = await Todo.countDocuments();
-        res.status(200).send('Todo succesfully deleted');
+        res.status(200).redirect('/');
     } catch (err) {
         console.error(err);
-    }
+    };
 });
 
-app.delete('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
+//DELETE AN ATTACHMENT
+app.post('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
     try {
         const deletedAttachment = await Attachment.findOneAndDelete({ _id: req.params.attachmentId, todoId: req.params.todoId});
         if (!deletedAttachment) {
