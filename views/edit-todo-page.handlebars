@@ -1,40 +1,28 @@
-<header style="
-  display: flex;
-  justify-content: space-between;
-  ">
+<header style="display: flex; justify-content: space-between;">
   <h3>Drew</h3>
   <h1>TODO EXPRESS</h1>
   <div class="inner-header-container">
-    <p class="date">{{date}}</p>
+    <p class="date">{{currentDate}}</p>
     <p class="settings"></p>
   </div>
 </header>
 
-<main style="
-  width: 500px;
-  margin: 0 auto;
-  text-align: center;
-">
+<main style="width: 500px; margin: 0 auto; text-align: center;">
   <h3>{{todoPrompt}}</h3>
   
   <form method="post" action="http://localhost:3000/todos">
     <input type="text" name="title" />
-    <input type="text" name="dueAt" />
+    <input type="date" name="dueAt" />
     <button id="submit" type="submit">Create</button>
   </form>
 
-  <ul style="
-    margin: 50px auto;
-    padding: 0;
-    list-style: none;
-    width: 600px;
-  ">
-      <li style="display: flex; justify-content: space-between;">
-        {{currentTodo.title}}
-        {{currentTodo.dueAt}}
+  <ul style="margin: 50px auto; padding: 0; list-style: none; width: 600px;">
+      <li style="display: flex; justify-content: space-between; align-items: center">
+        <h4>{{currentTodo.title}}</h4>
+        <p>Due by: {{dueDate}}</p>
         <form method="post" action="http://localhost:3000/todos/edit/{{currentTodo._id}}">
           <input type="text" name="title">
-          <input type="text" name="dueAt">
+          <input type="date" name="dueAt">
           <button type="submit">edit</button>
         </form>
       </li>

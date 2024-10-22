@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import {engine} from 'express-handlebars';
 import cors from 'cors';
-import path from 'path';
+import path, { format } from 'path';
 import fileUpload from 'express-fileupload';
 import bodyParser from 'body-parser';
 // import MethodOverrideOptions from 'method-override';
@@ -34,25 +34,20 @@ app.set('views', './views');
 app.get('/', async (req, res) => {
     const todos = [];
 
-    const date = new Date();
-    const today = date.getDay();
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-    const currentDate = `${today} - ${month} - ${year}`;
+    const currentDate = formatDate(new Date());
     const documentCount = await Todo.countDocuments();
 
     const todoPrompt = documentCount > 0 ? 'Your tasks' : 'Create a task';
 
     const documents = await Todo.find().lean();
     for(const obj of documents) {
+        console.log(formatDate(obj.dueAt));
+        let formattedDateString = formatDate(obj.dueAt);
+        obj.dueAt = formattedDateString;  
         todos.push(obj);
     };
 
-    for(const todo of todos) {
-        todo.dueAt = JSON.stringify(todo.dueAt).slice(1, 11);
-    };
-
-    console.log(todos);
+    console.log(documents);
 
     res.render('home', {
         layout: 'main', 
@@ -63,24 +58,21 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/todos/edit-form/:id', async (req, res) => {
-    const date = new Date();
-    const today = date.getDay();
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-    const currentDate = `${today} - ${month} - ${year}`;
+    const currentDate = formatDate(new Date());
     const documentCount = await Todo.countDocuments();
 
     const todoPrompt = documentCount > 0 ? 'Your tasks Not mine!' : 'Create a task';
 
     const currentTodo = await Todo.findOne({ _id: req.params.id }).lean();
-    currentTodo.dueAt = 
+    const dueDate = formatDate(currentTodo.dueAt);
 
     console.log('current todo ', currentTodo);
 
     res.render('edit-todo-page', {
         layout: 'main', 
         currentTodo: currentTodo,
-        date: currentDate,
+        currentDate: currentDate,
+        dueDate: dueDate,
         todoPrompt: todoPrompt,
     });
 });
@@ -210,3 +202,12 @@ app.listen(port, async () => {
     await connectDB();
     console.log(`Listening at localhost:${port}`);
 });
+
+function formatDate(dueDate) {
+    const day = String(dueDate.getDate()).padStart(2, '0');
+    const month = String(dueDate.getMonth()).padStart(2, '0');
+    const year = String(dueDate.getFullYear());
+    const formattedDate = `${year} - ${month} - ${day}`;
+
+    return formattedDate;
+};
