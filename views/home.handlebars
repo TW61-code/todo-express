@@ -10,13 +10,9 @@
   </div>
 </header>
 
-<main style="
-  width: 500px;
-  margin: 0 auto;
-  text-align: center;
-">
+<main style="width: 500px; margin: 0 auto; text-align: center;">
   <h3>{{todoPrompt}}</h3>
-  
+
   <form method="post" action="http://localhost:3000/todos">
     <input type="text" name="title" />
     <input type="date" name="dueAt" />
@@ -30,18 +26,18 @@
     width: 600px;
   ">
     {{#each todos}}
-      <li style="display: flex; justify-content: space-between; align-items: center;">
-        <p>{{this.title}}</p>
-        <p>Due date: {{this.dueAt}}</p>
-        <div class="form-container" style="display: flex;">
-          <form method="post" action="http://localhost:3000/todos/{{this._id}}">
-            <button type="submit">delete</button>
-          </form>
-          <form method="get" action="http://localhost:3000/todos/edit-form/{{this._id}}">
-            <button type="submit">edit</button>
-          </form>
-        </div>
-      </li>
+    <li style="display: flex; justify-content: space-between; align-items: center;">
+      <p>{{this.title}}</p>
+      <p>Due date: {{this.formattedDueAt}}</p>
+      <div class="form-container" style="display: flex;">
+        <form method="post" action="http://localhost:3000/todos/{{this._id}}">
+          <button type="submit">delete</button>
+        </form>
+        <form method="get" action="http://localhost:3000/todos/edit-form/{{this._id}}">
+          <button type="submit">edit</button>
+        </form>
+      </div>
+    </li>
     {{/each}}
   </ul>
 </main>

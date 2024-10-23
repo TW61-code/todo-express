@@ -2,9 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import {engine} from 'express-handlebars';
 import cors from 'cors';
-import path, { format } from 'path';
+import path from 'path';
 import fileUpload from 'express-fileupload';
-import bodyParser from 'body-parser';
+import { urlencoded } from 'body-parser';
 // import MethodOverrideOptions from 'method-override';
 import { Todo, Attachment } from './schema.js';
 
@@ -24,7 +24,7 @@ app.use(fileUpload());
 app.use(cors()); 
 const staticPath = path.join(__dirname);
 app.use(express.static(staticPath));
-app.use(bodyParser({ extended: false }));
+app.use(urlencoded({ extended: false }));
 
 app.engine('handlebars', engine());
 app.set('view engine', 'handlebars');
@@ -41,18 +41,81 @@ app.get('/', async (req, res) => {
 
     const documents = await Todo.find().lean();
     for(const obj of documents) {
-        console.log(formatDate(obj.dueAt));
-        let formattedDateString = formatDate(obj.dueAt);
-        obj.dueAt = formattedDateString;  
-        todos.push(obj);
+        if(obj.dueAt) {
+            console.log(formatDate(obj.dueAt));
+            let formattedDateString = formatDate(obj.dueAt);
+            (obj as any).formattedDueAt = formattedDateString; 
+            // console.log('formatted date: ', obj.formattedDueAt) 
+        } else {
+            console.log('dueAt is null or undefined for this document:', obj);
+            (obj as any).formattedDueAt = 'No due date';
+        };
+
+        todos.push(obj);    
     };
 
     console.log(documents);
 
     res.render('home', {
-        layout: 'main', 
+        layout: 'application', 
         todos: todos,
         date: currentDate,
+        todoPrompt: todoPrompt,
+    });
+});
+
+app.get('/required-field', async (req, res) => {
+    const todos = [];
+
+    const currentDate = formatDate(new Date());
+    const documentCount = await Todo.countDocuments();
+
+    const todoPrompt = documentCount > 0 ? 'Your tasks' : 'Create a task';
+
+    const documents = await Todo.find().lean();
+    for(const obj of documents) {
+        if(obj.dueAt) {
+            console.log(formatDate(obj.dueAt));
+            let formattedDateString = formatDate(obj.dueAt);
+            (obj as any).formattedDueAt = formattedDateString; 
+            // console.log('formatted date: ', obj.formattedDueAt) 
+        } else {
+            console.log('dueAt is null or undefined for this document:', obj);
+            (obj as any).formattedDueAt = 'No due date';
+        };
+
+        todos.push(obj);    
+    };
+
+    console.log(documents);
+
+    res.render('required-fields', {
+        layout: 'application', 
+        todos: todos,
+        date: currentDate,
+        todoPrompt: todoPrompt,
+    });
+});
+
+app.get('/edit-required-fields/:id', async (req, res) => {
+    const currentDate = formatDate(new Date());
+    const documentCount = await Todo.countDocuments();
+    let dueDate;
+
+    const todoPrompt = documentCount > 0 ? 'Your tasks Not mine!' : 'Create a task';
+
+    const currentTodo = await Todo.findOne({ _id: req.params.id }).lean();
+    if(currentTodo.dueAt) {
+        dueDate = formatDate(currentTodo.dueAt);
+    } else {
+        dueDate = 'No due date';
+    };
+
+    res.render('edit-required-field', {
+        layout: 'application', 
+        currentTodo: currentTodo,
+        currentDate: currentDate,
+        dueDate: dueDate,
         todoPrompt: todoPrompt,
     });
 });
@@ -60,34 +123,27 @@ app.get('/', async (req, res) => {
 app.get('/todos/edit-form/:id', async (req, res) => {
     const currentDate = formatDate(new Date());
     const documentCount = await Todo.countDocuments();
+    let dueDate;
 
     const todoPrompt = documentCount > 0 ? 'Your tasks Not mine!' : 'Create a task';
 
     const currentTodo = await Todo.findOne({ _id: req.params.id }).lean();
-    const dueDate = formatDate(currentTodo.dueAt);
+    if(currentTodo.dueAt) {
+        dueDate = formatDate(currentTodo.dueAt);
+    } else {
+        dueDate = 'No due date';
+    };
 
     console.log('current todo ', currentTodo);
 
     res.render('edit-todo-page', {
-        layout: 'main', 
+        layout: 'application', 
         currentTodo: currentTodo,
         currentDate: currentDate,
         dueDate: dueDate,
         todoPrompt: todoPrompt,
     });
 });
-//Return catch block error
-const errorJsonFromMongooseErrors = (mongooseErrors) => {
-    let errors = {};
-    console.dir(mongooseErrors);
-
-    for (const key in mongooseErrors.errors) {
-        const details = mongooseErrors.errors[key];
-        errors[key] = details.properties?.type || 'invalid';
-    };
-
-    return errors;
-};
 
 app.post('/todos/:id/attachments', async (req, res) => {
 
@@ -106,7 +162,6 @@ app.post('/todos/:id/attachments', async (req, res) => {
     try {
         const uploadPath = path.join(__dirname, '/uploads', fileName);
         const storagePath = `http://localhost:3000/todos/${id}/attachments`;
-        //to remove red squiggly alter the fileupload middlewares type declaration to accept a single object. NOT an array (.FileArray);
         const newAttachment = await Attachment.create({name: fileName, size: 10, todoId: id, storagePath: storagePath});
 
         newAttachment.save();
@@ -127,7 +182,8 @@ app.post('/todos', async (req, res) => {
         res.status(200).redirect('/');
     } catch (err) {
         const errors = errorJsonFromMongooseErrors(err);
-        res.status(422).json({ errors });
+        console.dir(errors);
+        res.status(422).redirect('/required-field');
     };
 });
 
@@ -171,8 +227,24 @@ app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
 
 //UPDATE A TODO
 app.post('/todos/edit/:id', async (req, res) => {
-    await Todo.findByIdAndUpdate(req.params.id, { title: req.body.title, dueAt: req.body.dueAt }, {new: true});
-    res.redirect('/');
+    const reqObj = req.body;
+    const currentTodo = reqObj.title;
+
+    if (!reqObj.title) {
+        const error = JSON.stringify( { errors: { title: "required"}});
+        errorJsonFromMongooseErrors(error);
+        // console.log(req.params.id);
+        res.redirect('/edit-required-fields/' + req.params.id);
+    };
+
+    try {
+        await Todo.findByIdAndUpdate(req.params.id, { title: reqObj.title, dueAt: reqObj.dueAt }, {new: true});
+        res.redirect('/');
+    } catch(err) {
+        const errors = errorJsonFromMongooseErrors(err);
+        console.dir('These are the catch block errors!: ', errors);
+        res.status(422).json( {errors} );
+    };
 });
 
 //DELETE A TODO
@@ -203,11 +275,24 @@ app.listen(port, async () => {
     console.log(`Listening at localhost:${port}`);
 });
 
-function formatDate(dueDate) {
-    const day = String(dueDate.getDate()).padStart(2, '0');
-    const month = String(dueDate.getMonth()).padStart(2, '0');
-    const year = String(dueDate.getFullYear());
+//Return catch block error
+const errorJsonFromMongooseErrors = (mongooseErrors) => {
+    let errors = {};
+    console.dir(mongooseErrors);
+
+    for (const key in mongooseErrors.errors) {
+        const details = mongooseErrors.errors[key];
+        errors[key] = details.properties?.type || 'invalid';
+    };
+
+    return errors;
+};
+
+function formatDate(date) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth()).padStart(2, '0');
+    const year = date.getFullYear();
     const formattedDate = `${year} - ${month} - ${day}`;
 
     return formattedDate;
-};
+};  
