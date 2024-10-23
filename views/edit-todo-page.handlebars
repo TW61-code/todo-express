@@ -577,13 +577,27 @@
             method="post"
           >
             <label for="create-field" class="sr-only">Create a todo</label>
-            <input
+            {{#each todos}} 
+              {{#if edit}}
+                            <input
+              id="create-field"
+              class="block h-full w-full border-0 py-0 pl-8 pr-0 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm"
+              placeholder="Edit... {{title}}"
+              type="text"
+              name="title"
+            />
+              {{/if}}
+              {{else}}
+                          <input
               id="create-field"
               class="block h-full w-full border-0 py-0 pl-8 pr-0 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm"
               placeholder="Create a todo..."
               type="text"
               name="title"
             />
+            {{/each}}
+
+
             <button
               type="submit"
               class="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500"

@@ -32,6 +32,8 @@ app.set('views', './views');
 
 //Handlebars method
 app.get('/', async (req, res) => {
+    await Todo.updateMany({}, { edit: false });
+
     const todos = [];
 
     const currentDate = formatDate(new Date());
@@ -41,6 +43,7 @@ app.get('/', async (req, res) => {
 
     const documents = await Todo.find().lean();
     for(const obj of documents) {
+        obj.edit = false;
         if(obj.dueAt) {
             console.log(formatDate(obj.dueAt));
             let formattedDateString = formatDate(obj.dueAt);
@@ -65,6 +68,7 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/required-field', async (req, res) => {
+
     const todos = [];
 
     const currentDate = formatDate(new Date());
@@ -137,6 +141,7 @@ app.get('/edit-required-fields/:id', async (req, res) => {
 });
 
 app.get('/todos/edit-page/:id', async (req, res) => {
+    await Todo.updateMany({}, { edit: false });
     let todos = [];
     const currentDate = formatDate(new Date());
     const documentCount = await Todo.countDocuments();
