@@ -170,11 +170,19 @@ app.post('/todos/edit/:id', async (req, res) => {
     };
 });
 
-app.post('todos/complete/:id', async (req, res) => {
-    const reqObj = req.body;
-
-    await Todo.findByIdAndUpdate(req.params.id, { completed: true }, { new: true });
-    res.status(200).redirect('/');
+//COMPLETE A TODO
+app.post('/todos/complete/:id', async (req, res) => {
+    try {
+        const updatedTodo = await Todo.findByIdAndUpdate(req.params.id, { completed: true }, { new: true });
+        if (!updatedTodo) {
+            res.status(404).send('Todo not found');
+            return;
+        }
+        res.status(200).redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error while completing the todo');
+    }
 });
 
 //DELETE A TODO
@@ -235,6 +243,8 @@ async function renderTodos() {
     for(let i = 0; i < documentCount; i++) {
         todos.push(documents[i]);
     };
+
+    console.dir(todos);
 
     return todos;
 };
