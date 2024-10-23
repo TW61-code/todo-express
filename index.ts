@@ -35,7 +35,9 @@ app.set('views', './views');
 app.get('/', async (req, res) => {
     await Todo.updateMany({}, { edit: false });
     const currentDate = formatDate(new Date());
-    const todos = await renderTodos();
+    // const todos = await renderTodos();
+
+    const todos = [];
 
     res.render('home', {
         layout: 'application', 
