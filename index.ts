@@ -67,6 +67,7 @@ app.get('/todos/edit-page/:id', async (req, res) => {
     await Todo.findByIdAndUpdate(req.params.id, { edit: true }, {new: true}).lean();
     const todos = await renderTodos();
 
+    console.log(todos);
 
     res.render('edit-todo-page', {
         layout: 'application', 
