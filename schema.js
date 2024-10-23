@@ -5,13 +5,15 @@ const TodoSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
   dueAt: Date,
+  formattedDueAt: String,
   edit: Boolean,
   completed: Boolean,
 });
 
 const Todo = mongoose.model('Todo', TodoSchema);
 TodoSchema.path('edit').default(false);
-Todo.schema.path('completed').default(false);
+TodoSchema.path('completed').default(false);
+TodoSchema.path('dueAt').default('No date specified');
 
 const AttachmentSchema = new mongoose.Schema({
   todoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Todo', required: true },
