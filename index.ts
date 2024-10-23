@@ -98,6 +98,7 @@ app.get('/required-field', async (req, res) => {
 });
 
 app.get('/edit-required-fields/:id', async (req, res) => {
+    const todos = [];
     const currentDate = formatDate(new Date());
     const documentCount = await Todo.countDocuments();
     let dueDate;
@@ -109,37 +110,66 @@ app.get('/edit-required-fields/:id', async (req, res) => {
         dueDate = formatDate(currentTodo.dueAt);
     } else {
         dueDate = 'No due date';
+    };
+
+    const documents = await Todo.find().lean();
+    for(const obj of documents) {
+        if(obj.dueAt) {
+            console.log(formatDate(obj.dueAt));
+            let formattedDateString = formatDate(obj.dueAt);
+            (obj as any).formattedDueAt = formattedDateString; 
+        } else {
+            console.log('dueAt is null or undefined for this document:', obj);
+            (obj as any).formattedDueAt = 'No due date';
+        };
+
+        todos.push(obj);    
     };
 
     res.render('edit-required-field', {
         layout: 'application', 
         currentTodo: currentTodo,
         currentDate: currentDate,
+        todos: todos,
         dueDate: dueDate,
         todoPrompt: todoPrompt,
     });
 });
 
-app.get('/todos/edit-form/:id', async (req, res) => {
+app.get('/todos/edit-page/:id', async (req, res) => {
+    let todos = [];
     const currentDate = formatDate(new Date());
     const documentCount = await Todo.countDocuments();
     let dueDate;
 
     const todoPrompt = documentCount > 0 ? 'Your tasks Not mine!' : 'Create a task';
 
-    const currentTodo = await Todo.findOne({ _id: req.params.id }).lean();
+    const currentTodo = await Todo.findByIdAndUpdate(req.params.id, { edit: true }, {new: true}).lean();
     if(currentTodo.dueAt) {
         dueDate = formatDate(currentTodo.dueAt);
     } else {
         dueDate = 'No due date';
     };
 
-    console.log('current todo ', currentTodo);
+    const documents = await Todo.find().lean();
+    for(const obj of documents) {
+        if(obj.dueAt) {
+            console.log(formatDate(obj.dueAt));
+            let formattedDateString = formatDate(obj.dueAt);
+            (obj as any).formattedDueAt = formattedDateString; 
+        } else {
+            console.log('dueAt is null or undefined for this document:', obj);
+            (obj as any).formattedDueAt = 'No due date';
+        };
+
+        todos.push(obj);    
+    };
 
     res.render('edit-todo-page', {
         layout: 'application', 
         currentTodo: currentTodo,
         currentDate: currentDate,
+        todos: todos,
         dueDate: dueDate,
         todoPrompt: todoPrompt,
     });

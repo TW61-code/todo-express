@@ -5,9 +5,11 @@ const TodoSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
   dueAt: Date,
+  edit: Boolean,
 });
 
 const Todo = mongoose.model('Todo', TodoSchema);
+TodoSchema.path('edit').default(false);
 
 const AttachmentSchema = new mongoose.Schema({
   todoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Todo', required: true },
