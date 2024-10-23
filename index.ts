@@ -31,152 +31,47 @@ app.set('view engine', 'handlebars');
 app.set('views', './views');
 
 //Handlebars method
+//HOME
 app.get('/', async (req, res) => {
     await Todo.updateMany({}, { edit: false });
-
-    const todos = [];
-
     const currentDate = formatDate(new Date());
-    const documentCount = await Todo.countDocuments();
-
-    const todoPrompt = documentCount > 0 ? 'Your tasks' : 'Create a task';
-
-    const documents = await Todo.find().lean();
-    for(const obj of documents) {
-        obj.edit = false;
-        if(obj.dueAt) {
-            console.log(formatDate(obj.dueAt));
-            let formattedDateString = formatDate(obj.dueAt);
-            (obj as any).formattedDueAt = formattedDateString; 
-            // console.log('formatted date: ', obj.formattedDueAt) 
-        } else {
-            console.log('dueAt is null or undefined for this document:', obj);
-            (obj as any).formattedDueAt = 'No due date';
-        };
-
-        todos.push(obj);    
-    };
-
-    console.log(documents);
+    const todos = await renderTodos();
 
     res.render('home', {
         layout: 'application', 
         todos: todos,
         date: currentDate,
-        todoPrompt: todoPrompt,
     });
 });
 
 app.get('/required-field', async (req, res) => {
-
-    const todos = [];
-
-    const currentDate = formatDate(new Date());
-    const documentCount = await Todo.countDocuments();
-
-    const todoPrompt = documentCount > 0 ? 'Your tasks' : 'Create a task';
-
-    const documents = await Todo.find().lean();
-    for(const obj of documents) {
-        if(obj.dueAt) {
-            console.log(formatDate(obj.dueAt));
-            let formattedDateString = formatDate(obj.dueAt);
-            (obj as any).formattedDueAt = formattedDateString; 
-            // console.log('formatted date: ', obj.formattedDueAt) 
-        } else {
-            console.log('dueAt is null or undefined for this document:', obj);
-            (obj as any).formattedDueAt = 'No due date';
-        };
-
-        todos.push(obj);    
-    };
-
-    console.log(documents);
-
+    await Todo.updateMany({}, { edit: false }, { new: true });
+    const todos = await renderTodos();
     res.render('required-fields', {
         layout: 'application', 
         todos: todos,
-        date: currentDate,
-        todoPrompt: todoPrompt,
     });
 });
 
 app.get('/edit-required-fields/:id', async (req, res) => {
-    const todos = [];
-    const currentDate = formatDate(new Date());
-    const documentCount = await Todo.countDocuments();
-    let dueDate;
-
-    const todoPrompt = documentCount > 0 ? 'Your tasks Not mine!' : 'Create a task';
-
-    const currentTodo = await Todo.findOne({ _id: req.params.id }).lean();
-    if(currentTodo.dueAt) {
-        dueDate = formatDate(currentTodo.dueAt);
-    } else {
-        dueDate = 'No due date';
-    };
-
-    const documents = await Todo.find().lean();
-    for(const obj of documents) {
-        if(obj.dueAt) {
-            console.log(formatDate(obj.dueAt));
-            let formattedDateString = formatDate(obj.dueAt);
-            (obj as any).formattedDueAt = formattedDateString; 
-        } else {
-            console.log('dueAt is null or undefined for this document:', obj);
-            (obj as any).formattedDueAt = 'No due date';
-        };
-
-        todos.push(obj);    
-    };
+    const todos = await renderTodos();
 
     res.render('edit-required-field', {
         layout: 'application', 
-        currentTodo: currentTodo,
-        currentDate: currentDate,
         todos: todos,
-        dueDate: dueDate,
-        todoPrompt: todoPrompt,
     });
 });
 
 app.get('/todos/edit-page/:id', async (req, res) => {
     await Todo.updateMany({}, { edit: false });
-    let todos = [];
-    const currentDate = formatDate(new Date());
-    const documentCount = await Todo.countDocuments();
-    let dueDate;
+    await Todo.findByIdAndUpdate(req.params.id, { edit: true }, {new: true}).lean();
+    const todos = await renderTodos();
 
-    const todoPrompt = documentCount > 0 ? 'Your tasks Not mine!' : 'Create a task';
-
-    const currentTodo = await Todo.findByIdAndUpdate(req.params.id, { edit: true }, {new: true}).lean();
-    if(currentTodo.dueAt) {
-        dueDate = formatDate(currentTodo.dueAt);
-    } else {
-        dueDate = 'No due date';
-    };
-
-    const documents = await Todo.find().lean();
-    for(const obj of documents) {
-        if(obj.dueAt) {
-            console.log(formatDate(obj.dueAt));
-            let formattedDateString = formatDate(obj.dueAt);
-            (obj as any).formattedDueAt = formattedDateString; 
-        } else {
-            console.log('dueAt is null or undefined for this document:', obj);
-            (obj as any).formattedDueAt = 'No due date';
-        };
-
-        todos.push(obj);    
-    };
+    console.log(todos);
 
     res.render('edit-todo-page', {
         layout: 'application', 
-        currentTodo: currentTodo,
-        currentDate: currentDate,
         todos: todos,
-        dueDate: dueDate,
-        todoPrompt: todoPrompt,
     });
 });
 
@@ -219,11 +114,6 @@ app.post('/todos', async (req, res) => {
         console.dir(errors);
         res.status(422).redirect('/required-field');
     };
-});
-
-app.get('/todos', async (req, res) => {
-    const data = await Todo.find();
-    res.send(data);
 });
 
 // Fetch a speific item
@@ -281,11 +171,19 @@ app.post('/todos/edit/:id', async (req, res) => {
     };
 });
 
-app.post('todos/complete/:id', async (req, res) => {
-    const reqObj = req.body;
-
-    await Todo.findByIdAndUpdate(req.params.id, { completed: true }, { new: true });
-    res.status(200).redirect('/');
+//COMPLETE A TODO
+app.post('/todos/complete/:id', async (req, res) => {
+    try {
+        const updatedTodo = await Todo.findByIdAndUpdate(req.params.id, { completed: true }, { new: true });
+        if (!updatedTodo) {
+            res.status(404).send('Todo not found');
+            return;
+        }
+        res.status(200).redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error while completing the todo');
+    }
 });
 
 //DELETE A TODO
@@ -337,3 +235,17 @@ function formatDate(date) {
 
     return formattedDate;
 };  
+
+async function renderTodos() {
+    const todos = [];
+    const documents = await Todo.find().lean();
+    const documentCount = await Todo.countDocuments();
+
+    for(let i = 0; i < documentCount; i++) {
+        todos.push(documents[i]);
+    };
+
+    console.dir(todos);
+
+    return todos;
+};
