@@ -6,10 +6,12 @@ const TodoSchema = new mongoose.Schema({
   description: String,
   dueAt: Date,
   edit: Boolean,
+  completed: Boolean,
 });
 
 const Todo = mongoose.model('Todo', TodoSchema);
 TodoSchema.path('edit').default(false);
+Todo.schema.path('completed').default(false);
 
 const AttachmentSchema = new mongoose.Schema({
   todoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Todo', required: true },

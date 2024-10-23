@@ -181,7 +181,6 @@ app.get('/todos/edit-page/:id', async (req, res) => {
 });
 
 app.post('/todos/:id/attachments', async (req, res) => {
-
     const { id } = req.params;
     const file = req.files.file;
     const fileCount = await Attachment.countDocuments();
@@ -282,8 +281,15 @@ app.post('/todos/edit/:id', async (req, res) => {
     };
 });
 
+app.post('todos/complete/:id', async (req, res) => {
+    const reqObj = req.body;
+
+    await Todo.findByIdAndUpdate(req.params.id, { completed: true }, { new: true });
+    res.status(200).redirect('/');
+});
+
 //DELETE A TODO
-app.post('/todos/:id', async (req, res) => {
+app.post('/todos/delete/:id', async (req, res) => {
     try {
         await Todo.findByIdAndDelete(req.params.id);
         res.status(200).redirect('/');
