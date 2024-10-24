@@ -31,7 +31,9 @@ const hbs = engine({
     layoutsDir: path.join(__dirname, 'views/layouts'),
     partialsDir: path.join(__dirname, 'views/partials'),
 
-    helpers: {},
+    helpers: {
+        format
+    },
 });
 
 app.engine('handlebars', hbs);
@@ -240,15 +242,6 @@ const errorJsonFromMongooseErrors = (mongooseErrors) => {
 
     return errors;
 };
-
-function formatDate(date) {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth()).padStart(2, '0');
-    const year = date.getFullYear();
-    const formattedDate = `${year} - ${month} - ${day}`;
-
-    return formattedDate;
-};  
 
 async function renderTodos() {
     const todos = [];
