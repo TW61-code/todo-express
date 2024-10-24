@@ -26,13 +26,26 @@ const staticPath = path.join(__dirname);
 app.use(express.static(staticPath));
 app.use(urlencoded({ extended: false }));
 
+const dateOptions: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    month: "long",
+    day: "numeric",
+}
+
 const hbs = engine({
     defaultLayout: 'application',
     layoutsDir: path.join(__dirname, 'views/layouts'),
     partialsDir: path.join(__dirname, 'views/partials'),
 
     helpers: {
-        format
+
+        formatDate(date) {
+            if(!date) {
+                return 'No due date';
+            } else {
+                return new Date(date).toLocaleString('en-US', dateOptions);
+            }
+        }
     },
 });
 
@@ -44,13 +57,11 @@ app.set('views', './views');
 //HOME
 app.get('/', async (req, res) => {
     await Todo.updateMany({}, { edit: false });
-    const currentDate = formatDate(new Date());
     const todos = await renderTodos();
 
     res.render('home', {
         layout: 'application', 
         todos: todos,
-        date: currentDate,
     });
 });
 
