@@ -1,6 +1,6 @@
 import express from 'express'; 
 import mongoose from 'mongoose';
-import {engine} from 'express-handlebars';
+import expbs, {engine} from 'express-handlebars';
 import cors from 'cors';
 import path from 'path';
 import fileUpload from 'express-fileupload';
@@ -26,7 +26,15 @@ const staticPath = path.join(__dirname);
 app.use(express.static(staticPath));
 app.use(urlencoded({ extended: false }));
 
-app.engine('handlebars', engine());
+const hbs = engine({
+    defaultLayout: 'application',
+    layoutsDir: path.join(__dirname, 'views/layouts'),
+    partialsDir: path.join(__dirname, 'views/partials'),
+
+    helpers: {},
+});
+
+app.engine('handlebars', hbs);
 app.set('view engine', 'handlebars');
 app.set('views', './views');
 

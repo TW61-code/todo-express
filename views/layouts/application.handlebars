@@ -10,6 +10,21 @@
 
 <body class="h-full">
     {{{body}}}
+
+    <script>
+        function grabInputValue(textElementId) {
+            const input = document.getElementById('editInput');
+            const textEl = document.getElementById('todoTitle');
+
+            input.addEventListener('input', function(e) {
+                textEl.innerHTML = e.target.value;
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            grabInputValue();
+        });
+    </script>
 </body>
 
 </html>
