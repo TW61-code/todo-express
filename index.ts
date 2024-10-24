@@ -63,15 +63,14 @@ app.get('/edit-required-fields/:id', async (req, res) => {
 });
 
 app.get('/todos/edit-page/:id', async (req, res) => {
-    await Todo.updateMany({}, { edit: false });
     await Todo.findByIdAndUpdate(req.params.id, { edit: true }, {new: true}).lean();
+    const currentTodo = await Todo.findById(req.params.id);
     const todos = await renderTodos();
-
-    console.log(todos);
 
     res.render('edit-todo-page', {
         layout: 'application', 
         todos: todos,
+        currentTodo: currentTodo,
     });
 });
 
@@ -152,10 +151,9 @@ app.get('/todos/:todoId/attachments/:attachmentId', async (req, res) => {
 //UPDATE A TODO
 app.post('/todos/edit/:id', async (req, res) => {
     const reqObj = req.body;
-    const currentTodo = reqObj.title;
 
     if (!reqObj.title) {
-        const error = JSON.stringify( { errors: { title: "required"}});
+        const error = JSON.stringify( { errors: { title: "required" } });
         errorJsonFromMongooseErrors(error);
         // console.log(req.params.id);
         res.redirect('/edit-required-fields/' + req.params.id);
@@ -244,8 +242,6 @@ async function renderTodos() {
     for(let i = 0; i < documentCount; i++) {
         todos.push(documents[i]);
     };
-
-    console.dir(todos);
 
     return todos;
 };
