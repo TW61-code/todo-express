@@ -173,8 +173,8 @@ app.post('/todos/edit/:id', async (req, res) => {
 //COMPLETE A TODO
 app.post('/todos/complete/:id', async (req, res) => {
     try {
-        const updatedTodo = await Todo.findByIdAndUpdate(req.params.id, { completed: true }, { new: true });
-        if (!updatedTodo) {
+        const completedTodo = await Todo.findByIdAndUpdate(req.params.id, { completed: true }, { new: true });
+        if (!completedTodo) {
             res.status(404).send('Todo not found');
             return;
         };
