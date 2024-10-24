@@ -63,6 +63,7 @@ app.get('/edit-required-fields/:id', async (req, res) => {
 });
 
 app.get('/todos/edit-page/:id', async (req, res) => {
+    await Todo.updateMany({}, { edit: false }, { new: true });
     await Todo.findByIdAndUpdate(req.params.id, { edit: true }, {new: true}).lean();
     const currentTodo = await Todo.findById(req.params.id);
     const todos = await renderTodos();
@@ -176,7 +177,9 @@ app.post('/todos/complete/:id', async (req, res) => {
         if (!updatedTodo) {
             res.status(404).send('Todo not found');
             return;
-        }
+        };
+        const documents = await Todo.find().lean();
+        console.log(documents);
         res.status(200).redirect('/');
     } catch (err) {
         console.error(err);
