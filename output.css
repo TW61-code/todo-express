@@ -1149,6 +1149,10 @@ video {
   color: rgb(34 197 94 / var(--tw-text-opacity));
 }
 
+.line-through {
+  text-decoration-line: line-through;
+}
+
 .opacity-0 {
   opacity: 0;
 }

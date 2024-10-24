@@ -14,15 +14,15 @@
           {{#if edit}}
                     <p id="todoTitle" class="text-sm font-semibold leading-6 text-blue-900 animate-pulse">{{title}}</p>
 
+            {{else if completed}}
+          <p class="text-sm font-semibold leading-6 line-through text-gray-900">{{title}}</p>    
             {{else}}
           <p class="text-sm font-semibold leading-6 text-gray-900">{{title}}</p>    
-
           {{/if}}
-          {{! <p class="mt-1 truncate text-xs leading-5 text-gray-500">leslie.alexander@example.com</p> }}
+           <p class="mt-1 truncate text-xs leading-5 text-gray-500">Due by: {{formatDate dueAt}}</p>
         </div>
       </div>
       <div class="hidden shrink-0 sm:flex sm:flex-col sm:items-end">
-        <p class="text-sm leading-6 text-gray-900">Due by: {{formatDate dueAt}}</p>
         <div class="flex">
           <form class="relative flex flex-1" action="http://localhost:3000/todos/edit-page/{{this._id}}" method="get">
             <button type="submit" class="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500">
