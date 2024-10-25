@@ -56,7 +56,7 @@ app.set('views', './views');
 //Handlebars method
 //HOME
 app.get('/', async (req, res) => {
-    await Todo.updateMany({}, { edit: false });
+    await Todo.updateMany({}, { edit: false, foundTodo: false });
     const todos = await renderTodos();
 
     res.render('home', {
@@ -84,7 +84,7 @@ app.get('/edit-required-fields/:id', async (req, res) => {
 });
 
 app.get('/todos/edit-page/:id', async (req, res) => {
-    await Todo.updateMany({}, { edit: false }, { new: true });
+    await Todo.updateMany({}, { edit: false, foundTodo: false }, { new: true });
     await Todo.findByIdAndUpdate(req.params.id, { edit: true }, {new: true}).lean();
     const currentTodo = await Todo.findById(req.params.id);
     const todos = await renderTodos();
@@ -94,6 +94,16 @@ app.get('/todos/edit-page/:id', async (req, res) => {
         todos: todos,
         currentTodo: currentTodo,
     });
+});
+
+app.get('/todos/search-page', async (req, res) => {
+    await Todo.updateMany({}, { edit: false }, { new: true });
+    const todos = await renderTodos();
+
+    res.render('searchTodoPage', {
+        layout: 'application',
+        todos: todos,
+    })
 });
 
 app.post('/todos/:id/attachments', async (req, res) => {
@@ -138,13 +148,14 @@ app.post('/todos', async (req, res) => {
 });
 
 // Fetch a speific item
-app.get('/todos/:id', async (req, res) => {
+app.get('/todos/title', async (req, res) => {
     try {
-        const selectedTodo = await Todo.findById(req.params.id);
-        if (!selectedTodo) {
+        const foundTodos = await Todo.updateMany({ title: req.query.title }, { foundTodo: true }, { new: true });
+        if (!foundTodos) {
             res.status(404).json({ error: 'Todo not found' });
         };
-        res.status(200).json(selectedTodo);
+        console.log(foundTodos);
+        res.status(200).redirect('/todos/search-page'); 
     } catch (err) {
         console.error(err);
         res.status(404).json({ error: 'Todo not found' });

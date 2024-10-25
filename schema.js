@@ -7,11 +7,13 @@ const TodoSchema = new mongoose.Schema({
   dueAt: Date,
   edit: Boolean,
   completed: Boolean,
+  foundTodo: Boolean
 });
 
 const Todo = mongoose.model('Todo', TodoSchema);
 TodoSchema.path('edit').default(false);
 Todo.schema.path('completed').default(false);
+Todo.schema.path('foundTodo').default(false);
 
 const AttachmentSchema = new mongoose.Schema({
   todoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Todo', required: true },
